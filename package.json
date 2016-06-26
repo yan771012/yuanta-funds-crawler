@@ -1,0 +1,28 @@
+{
+  "name": "yuanta-funds-crawler",
+  "version": "1.0.0",
+  "description": "元大基金爬蟲",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "babel-node src/index.js",
+    "yantest": "babel-node test.js"
+  },
+  "author": "Yan Chen",
+  "license": "MIT",
+  "devDependencies": {
+    "babel-cli": "^6.10.1",
+    "babel-preset-es2015-node": "^6.1.0",
+    "babel-preset-stage-0": "^6.5.0"
+  },
+  "babel": {
+    "presets": [
+      "es2015-node",
+      "stage-0"
+    ]
+  },
+  "dependencies": {
+    "cheerio": "^0.20.0",
+    "node-fetch": "^1.5.3"
+  }
+}
