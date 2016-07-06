@@ -4,12 +4,35 @@
 
 import fetch   from 'node-fetch';
 import cheerio from 'cheerio';
+import gcloud  from 'gcloud';
 
 import func    from './function';
 import config  from './config';
 
-async function main() {
+let projInfo = {
+  projectId: config.gcloud.projectId,
+  keyFilename: config.gcloud.keyFile
+};
 
+let bigquery = gcloud.bigquery(projInfo);
+
+async function main() {
+  let data = await fetchFundsData();
+  let dataset = bigquery.dataset(config.bigQuery.dataset);
+  let table = dataset.table(config.bigQuery.table);
+
+  table.insert(data, (err, insertErrors, apiResponse) => {
+    if (err) {
+      console.log(`err> `, err);
+    } else {
+      if (insertErrors.length == 0) {
+        console.log(`apiResponse> `, apiResponse);
+      }
+    }
+  });
+}
+
+async function fetchFundsData() {
   let res = await fetch(config.url);
   let html = await res.text();
   let $ = cheerio.load(html);
@@ -48,9 +71,8 @@ async function main() {
       formatArr.push(formatFund);
     }
   }
-  console.log(JSON.stringify(formatArr, null, '\t'));
-  console.log(`b size> `, fundsArr.length);
-  console.log(`a size> `, formatArr.length);
+
+  return formatArr;
 }
 
 main();
