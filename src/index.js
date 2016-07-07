@@ -5,31 +5,55 @@
 import fetch   from 'node-fetch';
 import cheerio from 'cheerio';
 import gcloud  from 'gcloud';
+import log4js from 'log4js';
 
 import func    from './function';
 import config  from './config';
+
+log4js.configure({
+  appenders: [
+    {
+      type: 'file',
+      filename: config.log.logFilePath,
+      maxLogSize: config.log.maxLogSize,
+      backups: config.log.backups,
+      category: 'yuanta-funds'
+    }
+  ]
+});
+
+let LOG = log4js.getLogger('yuanta-funds');
 
 let projInfo = {
   projectId: config.gcloud.projectId,
   keyFilename: config.gcloud.keyFile
 };
 
-let bigquery = gcloud.bigquery(projInfo);
+let bigQuery = gcloud.bigquery(projInfo);
 
 async function main() {
-  let data = await fetchFundsData();
-  let dataset = bigquery.dataset(config.bigQuery.dataset);
-  let table = dataset.table(config.bigQuery.table);
+  try {
+    LOG.info(`yuanta-funds-crawler start ...`);
+    let startTime = new Date();
+    let data = await fetchFundsData();
+    let dataset = bigQuery.dataset(config.bigQuery.dataset);
+    let table = dataset.table(config.bigQuery.table);
 
-  table.insert(data, (err, insertErrors, apiResponse) => {
-    if (err) {
-      console.log(`err> `, err);
-    } else {
-      if (insertErrors.length == 0) {
-        console.log(`apiResponse> `, apiResponse);
+    table.insert(data, (err, insertErrors) => {
+      if (err) {
+        LOG.error(`BigQuery insert failed.`, err);
+      } else {
+        if (insertErrors.length == 0) {
+          LOG.info(`BigQuery insert success.`);
+        }
       }
-    }
-  });
+      let executionTimeSec = (new Date - startTime) / 1000;
+      LOG.info(`yuanta-funds-crawler end. Execution Time: ${executionTimeSec} Sec.`);
+    });
+
+  } catch (e) {
+    LOG.fatal(`Process Crash...`, e);
+  }
 }
 
 async function fetchFundsData() {
@@ -62,6 +86,8 @@ async function fetchFundsData() {
     fundsArr.push(fundObj);
   });
 
+  LOG.info(`Fetch ${fundsArr.length} funds.`);
+
   let formatArr = [];
   for (let i = 0; i < fundsArr.length; i++) {
     let fund = fundsArr[i];
@@ -69,10 +95,15 @@ async function fetchFundsData() {
 
     if (formatFund) {
       formatArr.push(formatFund);
+    } else {
+      LOG.warn(`Fund format failed.`, fund);
     }
   }
 
+  LOG.info(`Format ${fundsArr.length} funds.`);
+
   return formatArr;
 }
+
 
 main();

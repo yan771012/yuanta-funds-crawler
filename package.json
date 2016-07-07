@@ -5,14 +5,17 @@
   "main": "src/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "babel-node src/index.js"
+    "start": "babel-node src/index.js",
+    "clean": "rimraf dist",
+    "build": "npm run clean && babel src -d dist --copy-files"
   },
   "author": "Yan Chen",
   "license": "MIT",
   "devDependencies": {
     "babel-cli": "^6.10.1",
     "babel-preset-es2015-node": "^6.1.0",
-    "babel-preset-stage-0": "^6.5.0"
+    "babel-preset-stage-0": "^6.5.0",
+    "rimraf": "^2.5.3"
   },
   "babel": {
     "presets": [
@@ -24,6 +27,7 @@
     "cheerio": "^0.20.0",
     "gcloud": "^0.36.0",
     "jsonschema": "^1.1.0",
+    "log4js": "^0.6.37",
     "node-fetch": "^1.5.3"
   }
 }
