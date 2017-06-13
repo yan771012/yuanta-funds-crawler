@@ -1,23 +1,13 @@
-/**
- * Created by Chen Jyun Yan on 2016/7/4.
- */
+import multiconfig from '@nukr/multiconfig';
 
-const config = {
+export default multiconfig({
   url: `https://www.yuantafunds.com/b1/b2_2.aspx`,
-  log: {
-    logFilePath: '',
-    maxLogSize: 20480,
-    backups: 100,
-    level: 'info'
-  },
-  gcloud: {
-    keyFile: ``,
-    projectId: ``
-  },
-  bigQuery: {
-    dataset: ``,
-    table: ``
+  schedule: '0 0 */1 * *',
+  db: {
+    host: '127.0.0.1',
+    user: 'root',
+    password: '123456',
+    db: 'YanTest',
+    charset: 'utf8'
   }
-};
-
-export default config;
+});

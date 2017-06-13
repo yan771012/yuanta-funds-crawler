@@ -2,58 +2,72 @@
  * Created by Chen Jyun Yan on 2016/6/26.
  */
 
-import fetch   from 'node-fetch';
-import cheerio from 'cheerio';
-import gcloud  from 'gcloud';
-import log4js from 'log4js';
+import fetch    from 'node-fetch';
+import cheerio  from 'cheerio';
+import func     from './function';
+import db       from './database';
+import config   from './config';
+import MARIASQL from 'mariasql';
+import schedule from 'node-schedule';
 
-import func    from './function';
-import config  from './config';
-
-log4js.configure({
-  appenders: [
-    {
-      type: 'file',
-      filename: config.log.logFilePath,
-      maxLogSize: config.log.maxLogSize,
-      backups: config.log.backups,
-      category: 'yuanta-funds'
-    }
-  ]
-});
-
-let LOG = log4js.getLogger('yuanta-funds');
-
-let projInfo = {
-  projectId: config.gcloud.projectId,
-  keyFilename: config.gcloud.keyFile
-};
-
-let bigQuery = gcloud.bigquery(projInfo);
 
 async function main() {
+  let client;
   try {
-    LOG.info(`yuanta-funds-crawler start ...`);
+    console.log(`yuanta-funds-crawler start ...`);
+    client = new MARIASQL(config.db);
+    let allFundInfo = await db.getAllFundInfo(client);
     let startTime = new Date();
-    let data = await fetchFundsData();
-    let dataset = bigQuery.dataset(config.bigQuery.dataset);
-    let table = dataset.table(config.bigQuery.table);
+    let fundsData = await fetchFundsData();
 
-    table.insert(data, (err, insertErrors) => {
-      if (err) {
-        LOG.error(`BigQuery insert failed.`, err);
-      } else {
-        if (insertErrors.length == 0) {
-          LOG.info(`BigQuery insert success.`);
-        }
+    let insertFundData = [];
+    let updateFundInfo = [];
+
+    for (let i = 0; i < fundsData.length; i++) {
+      let fund = fundsData[i];
+      let fundInfo = await getFundInfo(client, allFundInfo, fund);
+
+      insertFundData.push({
+        fund_info_id: fundInfo.id,
+        value: fund.value,
+        updated_on: fund.updated_on
+      });
+
+      if (fund.max_value !== fundInfo.max_value || fund.min_value !== fundInfo.min_value) {
+        updateFundInfo.push({
+          id: fundInfo.id,
+          max_value: fund.max_value,
+          min_value: fund.min_value
+        })
       }
-      let executionTimeSec = (new Date - startTime) / 1000;
-      LOG.info(`yuanta-funds-crawler end. Execution Time: ${executionTimeSec} Sec.`);
-    });
+    }
+
+    await db.insertFundData(client, insertFundData);
+    await db.updateFundInfo(client, updateFundInfo);
+
+    let executionTimeSec = (new Date - startTime) / 1000;
+    client.end();
+    console.log(`yuanta-funds-crawler end. Execution Time: ${executionTimeSec} Sec.`);
 
   } catch (e) {
-    LOG.fatal(`Process Crash...`, e);
+    console.error(`Process Crash...`, e);
+    if (client) {
+      client.end();
+    }
   }
+}
+
+async function getFundInfo(client, allFundInfo, fund) {
+
+  for (let i = 0; i < allFundInfo.length; i++) {
+    if (fund.name === allFundInfo[i].name) {
+      return allFundInfo[i];
+    }
+  }
+
+  let fundInfo = await db.insertFundInfo(client, fund.name, fund.max_value, fund.min_value);
+  allFundInfo.push(fundInfo);
+  return fundInfo;
 }
 
 async function fetchFundsData() {
@@ -70,23 +84,23 @@ async function fetchFundsData() {
           fundObj['name'] = $(td).find('a').text();
           break;
         case 1:
-          fundObj['updatedOn'] = $(td).find('span').text();
+          fundObj['updated_on'] = $(td).find('span').text();
           break;
         case 2:
           fundObj['value'] = $(td).find('span').text();
           break;
         case 5:
-          fundObj['maxValue'] = $(td).find('span').text();
+          fundObj['max_value'] = $(td).find('span').text();
           break;
         case 6:
-          fundObj['minValue'] = $(td).find('span').text();
+          fundObj['min_value'] = $(td).find('span').text();
           break;
       }
     });
     fundsArr.push(fundObj);
   });
 
-  LOG.info(`Fetch ${fundsArr.length} funds.`);
+  console.log(`Fetch ${fundsArr.length} funds.`);
 
   let formatArr = [];
   for (let i = 0; i < fundsArr.length; i++) {
@@ -96,14 +110,13 @@ async function fetchFundsData() {
     if (formatFund) {
       formatArr.push(formatFund);
     } else {
-      LOG.warn(`Fund format failed.`, fund);
+      console.error(`Fund format failed.`, fund);
     }
   }
 
-  LOG.info(`Format ${fundsArr.length} funds.`);
+  console.log(`Format ${fundsArr.length} funds.`);
 
   return formatArr;
 }
-
-
-main();
+console.log(JSON.stringify(config, null, 4));
+schedule.scheduleJob(config.schedule, main);

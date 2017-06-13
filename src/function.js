@@ -12,22 +12,22 @@ async function formatInsertData(obj = {}) {
   let v = new Validator();
   let vResult = v.validate(obj, htmlObjectSchema);
   let formatObj = {};
-  if (vResult.errors.length == 0) {
+  if (vResult.errors.length === 0) {
     formatObj['name'] = obj.name.trim();
     formatObj['value'] = await parseValue(obj.value.trim());
-    formatObj['maxValue'] = await parseValue(obj.maxValue.trim());
-    formatObj['minValue'] = await parseValue(obj.minValue.trim());
+    formatObj['max_value'] = await parseValue(obj.max_value.trim());
+    formatObj['min_value'] = await parseValue(obj.min_value.trim());
 
-    let updateDate = new Date(obj.updatedOn.trim());
+    let updateDate = new Date(obj.updated_on.trim());
     if (await isDateObject(updateDate)) {
-      formatObj['updatedOn'] = updateDate.getTime();
+      formatObj['updated_on'] = updateDate.getTime();
     }
 
   }
 
   vResult = v.validate(formatObj, formatObjectSchema);
 
-  return (vResult.errors.length == 0) ? formatObj : undefined;
+  return (vResult.errors.length === 0) ? formatObj : undefined;
 }
 
 async function parseValue(str = '') {
@@ -49,5 +49,5 @@ async function isDateObject(date) {
 }
 
 export default {
-  formatInsertData: formatInsertData
+  formatInsertData
 }

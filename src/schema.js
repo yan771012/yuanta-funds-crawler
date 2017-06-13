@@ -7,12 +7,12 @@ export const htmlObjectSchema = {
   type: 'object',
   properties: {
     name: {type: 'string'},
-    updatedOn: {type: 'string'},
+    updated_on: {type: 'string'},
     value: {type: 'string'},
-    maxValue: {type: 'string'},
-    minValue: {type: 'string'}
+    max_value: {type: 'string'},
+    min_value: {type: 'string'}
   },
-  required: ['name', 'updatedOn', 'value', 'maxValue', 'minValue']
+  required: ['name', 'updated_on', 'value', 'max_value', 'min_value']
 };
 
 export const formatObjectSchema = {
@@ -20,10 +20,10 @@ export const formatObjectSchema = {
   type: 'object',
   properties: {
     name: {type: 'string'},
-    updatedOn: {type: 'integer'},
+    updated_on: {type: 'integer'},
     value: {type: 'number'},
-    maxValue: {type: 'number'},
-    minValue: {type: 'number'}
+    max_value: {type: 'number'},
+    min_value: {type: 'number'}
   },
-  required: ['name', 'updatedOn', 'value', 'maxValue', 'minValue']
+  required: ['name', 'updated_on', 'value', 'max_value', 'min_value']
 };
